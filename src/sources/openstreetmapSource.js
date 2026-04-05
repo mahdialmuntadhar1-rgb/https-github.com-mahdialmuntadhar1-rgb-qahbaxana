@@ -3,9 +3,9 @@ const logger = require('../utils/logger');
 const { sleep } = require('../utils/sleep');
 const CONFIG = require('../config/constants');
 
-async function fetchFromOpenStreetMap(governorate, category) {
+async function fetchFromOpenStreetMap(governorate, category, city = null) {
   try {
-    logger.info(`🗺️ Fetching from OpenStreetMap: ${category} in ${governorate}`);
+    logger.info(`🗺️ Fetching from OpenStreetMap: ${category} in ${city || governorate}`);
     
     // Map categories to OSM tags
     const categoryToTag = {
@@ -23,7 +23,12 @@ async function fetchFromOpenStreetMap(governorate, category) {
       'beauty salons': 'shop=beauty',
       'cafes': 'amenity=cafe',
       'bakeries': 'shop=bakery',
-      'bookstores': 'shop=books'
+      'bookstores': 'shop=books',
+      'hardware stores': 'shop=hardware',
+      'jewelry stores': 'shop=jewelry',
+      'mobile phone stores': 'shop=mobile_phone',
+      'furniture stores': 'shop=furniture',
+      'fitness centers': 'leisure=fitness_centre'
     };
     
     const tag = categoryToTag[category.toLowerCase()];
@@ -32,11 +37,19 @@ async function fetchFromOpenStreetMap(governorate, category) {
       return [];
     }
     
+    // Build location filter
+    let locationFilter = '';
+    if (city) {
+      locationFilter = `["name"="${city}"] -> .searchArea;`;
+    } else {
+      locationFilter = `["name"="${governorate}"] -> .searchArea;`;
+    }
+    
     // Overpass API query
     const query = `
       [out:json][timeout:25];
       (
-        area["name"="${governorate}"]->.searchArea;
+        area${locationFilter}
         node[${tag}](area.searchArea);
         way[${tag}](area.searchArea);
         relation[${tag}](area.searchArea);
@@ -51,7 +64,7 @@ async function fetchFromOpenStreetMap(governorate, category) {
     });
     
     if (!response.data || !response.data.elements) {
-      logger.warn(`No OSM data found for ${category} in ${governorate}`);
+      logger.warn(`No OSM data found for ${category} in ${city || governorate}`);
       return [];
     }
     
@@ -61,12 +74,13 @@ async function fetchFromOpenStreetMap(governorate, category) {
         name: element.tags.name,
         category: category,
         governorate: governorate,
-        city: element.tags['addr:city'] || governorate,
+        city: element.tags['addr:city'] || city || governorate,
         phone: element.tags.phone || null,
+        address: element.tags['addr:street'] || null,
         source: 'openstreetmap',
         confidence: 0.6 // OSM data confidence
       }))
-      .slice(0, CONFIG.MAX_BUSINESSES_PER_RUN);
+      .slice(0, CONFIG.TARGET_BUSINESSES_PER_CITY_CATEGORY * 2);
     
     logger.info(`✅ OpenStreetMap returned ${businesses.length} businesses`);
     
@@ -75,7 +89,7 @@ async function fetchFromOpenStreetMap(governorate, category) {
     
     return businesses;
   } catch (error) {
-    logger.error(`❌ OpenStreetMap fetch failed for ${category} in ${governorate}:`, error);
+    logger.error(`❌ OpenStreetMap fetch failed for ${category} in ${city || governorate}:`, error);
     return []; // Return empty array instead of throwing to avoid breaking the flow
   }
 }

@@ -1,14 +1,10 @@
-const { runAgent } = require('./runAgent');
+const { runCategoryCollection } = require('./categoryRunner');
 const CATEGORIES = require('../config/categories');
 const logger = require('../utils/logger');
 const { sleep } = require('../utils/sleep');
 
-async function autoContinueGovernorate(governorate, startCategory = null) {
-  logger.info(`📍 Starting auto-continue for ${governorate}`);
-  
-  const categoriesToRun = startCategory 
-    ? CATEGORIES.slice(CATEGORIES.indexOf(startCategory))
-    : CATEGORIES;
+async function runCityCollection(governorate, city) {
+  logger.info(`🏙️ Starting city collection: ${city} in ${governorate}`);
   
   const results = {
     total: 0,
@@ -17,22 +13,24 @@ async function autoContinueGovernorate(governorate, startCategory = null) {
     categories: {}
   };
   
-  for (const category of categoriesToRun) {
+  for (const category of CATEGORIES) {
     try {
-      logger.info(`\n📍 ${governorate} → ${category}`);
+      logger.info(`\n📍 ${city} → ${category}`);
       logger.info('='.repeat(50));
       
-      const businesses = await runAgent(governorate, category);
+      const categoryResult = await runCategoryCollection(governorate, city, category);
       
       results.categories[category] = {
         success: true,
-        count: businesses.length
+        saved: categoryResult.saved,
+        target: categoryResult.target,
+        message: categoryResult.message
       };
       
       results.successful++;
-      results.total += businesses.length;
+      results.total += categoryResult.saved;
       
-      logger.info(`✅ Completed ${category}: ${businesses.length} businesses saved`);
+      logger.info(`✅ Completed ${category}: ${categoryResult.saved}/${categoryResult.target} businesses saved`);
       
       // Small delay between categories to avoid rate limiting
       await sleep(2000);
@@ -52,12 +50,12 @@ async function autoContinueGovernorate(governorate, startCategory = null) {
     }
   }
   
-  logger.info(`\n🎉 Auto-continue completed for ${governorate}`);
+  logger.info(`\n🎉 City collection completed for ${city}`);
   logger.info(`📊 Summary: ${results.successful} successful, ${results.failed} failed, ${results.total} total businesses`);
   
   return results;
 }
 
 module.exports = {
-  autoContinueGovernorate
+  runCityCollection
 };

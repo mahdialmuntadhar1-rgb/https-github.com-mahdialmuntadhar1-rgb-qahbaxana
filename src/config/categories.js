@@ -1,4 +1,4 @@
-// Business categories for Iraqi data collection
+// 20 business categories for Iraqi data collection
 const CATEGORIES = [
   'restaurants',
   'hotels', 
@@ -14,7 +14,12 @@ const CATEGORIES = [
   'beauty salons',
   'cafes',
   'bakeries',
-  'bookstores'
+  'bookstores',
+  'hardware stores',
+  'jewelry stores',
+  'mobile phone stores',
+  'furniture stores',
+  'fitness centers'
 ];
 
 module.exports = CATEGORIES;

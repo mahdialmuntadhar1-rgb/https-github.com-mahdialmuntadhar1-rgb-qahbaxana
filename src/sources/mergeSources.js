@@ -1,12 +1,10 @@
-const { fetchFromGemini } = require('./geminiSource');
 const { fetchFromOpenStreetMap } = require('./openstreetmapSource');
 const { fetchFromFoursquare } = require('./foursquareSource');
 const logger = require('../utils/logger');
 const CONFIG = require('../config/constants');
 
-async function fetchFromAllSources(governorate, category) {
+async function fetchFromAllSources(governorate, category, city = null) {
   const results = {
-    gemini: [],
     openstreetmap: [],
     foursquare: [],
     all: [],
@@ -14,17 +12,9 @@ async function fetchFromAllSources(governorate, category) {
   };
   
   try {
-    // Fetch from Gemini (primary source)
-    try {
-      results.gemini = await fetchFromGemini(governorate, category);
-      logger.info(`Gemini: ${results.gemini.length} businesses`);
-    } catch (error) {
-      logger.error('Gemini source failed:', error);
-    }
-    
     // Fetch from OpenStreetMap
     try {
-      results.openstreetmap = await fetchFromOpenStreetMap(governorate, category);
+      results.openstreetmap = await fetchFromOpenStreetMap(governorate, category, city);
       logger.info(`OpenStreetMap: ${results.openstreetmap.length} businesses`);
     } catch (error) {
       logger.error('OpenStreetMap source failed:', error);
@@ -32,7 +22,7 @@ async function fetchFromAllSources(governorate, category) {
     
     // Fetch from Foursquare
     try {
-      results.foursquare = await fetchFromFoursquare(governorate, category);
+      results.foursquare = await fetchFromFoursquare(governorate, category, city);
       logger.info(`Foursquare: ${results.foursquare.length} businesses`);
     } catch (error) {
       logger.error('Foursquare source failed:', error);
@@ -40,14 +30,13 @@ async function fetchFromAllSources(governorate, category) {
     
     // Merge all results
     results.all = [
-      ...results.gemini,
       ...results.openstreetmap,
       ...results.foursquare
     ];
     
     results.total = results.all.length;
     
-    logger.info(`📊 All sources combined: ${results.total} businesses (${results.gemini.length} Gemini, ${results.openstreetmap.length} OSM, ${results.foursquare.length} Foursquare)`);
+    logger.info(`📊 All sources combined: ${results.total} businesses (${results.openstreetmap.length} OSM, ${results.foursquare.length} Foursquare)`);
     
     return results;
   } catch (error) {
@@ -74,7 +63,7 @@ function removeObviousDuplicates(businesses) {
   
   logger.info(`Removed ${businesses.length - deduplicated.length} obvious duplicates`);
   
-  return deduplicated.slice(0, CONFIG.MAX_BUSINESSES_PER_RUN);
+  return deduplicated.slice(0, CONFIG.TARGET_BUSINESSES_PER_CITY_CATEGORY * 3); // Get more than needed for filtering
 }
 
 module.exports = {

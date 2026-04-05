@@ -1,14 +1,18 @@
 const { supabase } = require('./supabase');
 const CONFIG = require('../config/constants');
+const logger = require('../utils/logger');
 
-async function createJob(governorate, category) {
+async function createJob(governorate, city, category) {
   try {
     const { data, error } = await supabase
       .from('jobs')
       .insert({
         governorate,
+        city,
         category,
         status: CONFIG.JOB_STATUS.PENDING,
+        target_count: CONFIG.TARGET_BUSINESSES_PER_CITY_CATEGORY,
+        saved_count: 0,
         current_step: 'Created'
       })
       .select()
@@ -17,18 +21,19 @@ async function createJob(governorate, category) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Create job error:', error);
+    logger.error('Create job error:', error);
     throw error;
   }
 }
 
-async function updateJobStatus(jobId, status, progress = null, currentStep = null, errorMessage = null) {
+async function updateJobStatus(jobId, status, progress = null, currentStep = null, errorMessage = null, savedCount = null) {
   try {
     const updateData = { status };
     
     if (progress !== null) updateData.progress = progress;
     if (currentStep !== null) updateData.current_step = currentStep;
     if (errorMessage !== null) updateData.error_message = errorMessage;
+    if (savedCount !== null) updateData.saved_count = savedCount;
     
     if (status === CONFIG.JOB_STATUS.DONE || status === CONFIG.JOB_STATUS.FAILED) {
       updateData.completed_at = new Date().toISOString();
@@ -46,7 +51,27 @@ async function updateJobStatus(jobId, status, progress = null, currentStep = nul
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Update job status error:', error);
+    logger.error('Update job status error:', error);
+    throw error;
+  }
+}
+
+async function incrementSavedCount(jobId) {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ 
+        saved_count: supabase.rpc('increment', { x: 'saved_count' }),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', jobId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    logger.error('Increment saved count error:', error);
     throw error;
   }
 }
@@ -62,7 +87,7 @@ async function getJobById(jobId) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Get job by ID error:', error);
+    logger.error('Get job by ID error:', error);
     throw error;
   }
 }
@@ -78,7 +103,7 @@ async function getRunningJobs() {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('Get running jobs error:', error);
+    logger.error('Get running jobs error:', error);
     return [];
   }
 }
@@ -94,7 +119,7 @@ async function getPendingJobs() {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('Get pending jobs error:', error);
+    logger.error('Get pending jobs error:', error);
     return [];
   }
 }
@@ -114,12 +139,12 @@ async function incrementRetryCount(jobId) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Increment retry count error:', error);
+    logger.error('Increment retry count error:', error);
     throw error;
   }
 }
 
-async function completeJob(jobId, businessesFound = 0, businessesSaved = 0) {
+async function completeJob(jobId) {
   try {
     const { data, error } = await supabase
       .from('jobs')
@@ -127,8 +152,6 @@ async function completeJob(jobId, businessesFound = 0, businessesSaved = 0) {
         status: CONFIG.JOB_STATUS.DONE,
         progress: 100,
         current_step: 'Completed',
-        businesses_found: businessesFound,
-        businesses_saved: businessesSaved,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -139,7 +162,7 @@ async function completeJob(jobId, businessesFound = 0, businessesSaved = 0) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Complete job error:', error);
+    logger.error('Complete job error:', error);
     throw error;
   }
 }
@@ -162,7 +185,7 @@ async function failJob(jobId, errorMessage) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Fail job error:', error);
+    logger.error('Fail job error:', error);
     throw error;
   }
 }
@@ -170,6 +193,7 @@ async function failJob(jobId, errorMessage) {
 module.exports = {
   createJob,
   updateJobStatus,
+  incrementSavedCount,
   getJobById,
   getRunningJobs,
   getPendingJobs,

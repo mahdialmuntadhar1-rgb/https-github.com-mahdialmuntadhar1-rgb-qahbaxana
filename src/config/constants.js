@@ -1,18 +1,17 @@
-// System configuration constants
+// Simplified system configuration constants
 const CONFIG = {
   MAX_CONCURRENT_JOBS: 2,
   MAX_RETRIES: 3,
   SOURCE_DELAY_MS: 3000,
-  MAX_BUSINESSES_PER_RUN: 30,
+  TARGET_BUSINESSES_PER_CITY_CATEGORY: 10,
   
   // Progress tracking steps
   PROGRESS_STEPS: {
     CREATED: 10,
     FETCHING: 30,
-    CLEANING: 50,
-    DEDUPLICATING: 70,
-    SAVING: 90,
-    DONE: 100
+    VALIDATING: 50,
+    SAVING: 80,
+    COMPLETED: 100
   },
   
   // Job statuses
@@ -23,11 +22,10 @@ const CONFIG = {
     FAILED: 'failed'
   },
   
-  // Staging business statuses
-  STAGING_STATUS: {
+  // Business verification statuses
+  VERIFICATION_STATUS: {
+    VERIFIED: 'verified',
     PENDING: 'pending',
-    DUPLICATE: 'duplicate',
-    PROMOTED: 'promoted',
     REJECTED: 'rejected'
   }
 };

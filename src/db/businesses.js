@@ -1,4 +1,5 @@
 const { supabase } = require('./supabase');
+const logger = require('../utils/logger');
 
 async function findDuplicateBusiness(normalizedKey) {
   try {
@@ -24,24 +25,26 @@ async function findDuplicateBusiness(normalizedKey) {
     
     return null;
   } catch (error) {
-    console.error('Find duplicate business error:', error);
+    logger.error('Find duplicate business error:', error);
     return null;
   }
 }
 
-async function saveBusiness(record, jobId) {
+async function saveBusiness(business, jobId) {
   try {
     const { data, error } = await supabase
       .from('businesses')
       .insert({
-        job_id: jobId,
-        name: record.name,
-        category: record.category,
-        governorate: record.governorate,
-        city: record.city,
-        phone: record.phone || null,
-        source: record.source,
-        confidence: record.confidence || 0.5
+        governorate: business.governorate,
+        city: business.city,
+        category: business.category,
+        name: business.name,
+        phone: business.phone || null,
+        address: business.address || null,
+        source: business.source,
+        confidence: business.confidence || 0.5,
+        verification_status: 'verified',
+        job_id: jobId
       })
       .select()
       .single();
@@ -49,48 +52,7 @@ async function saveBusiness(record, jobId) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Save business error:', error);
-    throw error;
-  }
-}
-
-async function promoteStagingToBusiness(stagingId) {
-  try {
-    // Get staging business record
-    const { data: staging, error: fetchError } = await supabase
-      .from('staging_businesses')
-      .select('*')
-      .eq('id', stagingId)
-      .single();
-
-    if (fetchError) throw fetchError;
-    if (!staging) throw new Error('Staging business not found');
-
-    // Insert into businesses table
-    const { data: business, error: insertError } = await supabase
-      .from('businesses')
-      .insert({
-        job_id: staging.job_id,
-        name: staging.name,
-        category: staging.category,
-        governorate: staging.governorate,
-        city: staging.city,
-        phone: staging.phone,
-        source: staging.source,
-        confidence: staging.confidence
-      })
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-
-    // Mark staging as promoted
-    const { markStagingBusinessPromoted } = require('./stagingBusinesses');
-    await markStagingBusinessPromoted(stagingId);
-
-    return business;
-  } catch (error) {
-    console.error('Promote staging to business error:', error);
+    logger.error('Save business error:', error);
     throw error;
   }
 }
@@ -106,45 +68,30 @@ async function getBusinessesByJob(jobId) {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('Get businesses by job error:', error);
+    logger.error('Get businesses by job error:', error);
     return [];
   }
 }
 
-async function getBusinessStats() {
+async function getBusinessCountForCityCategory(city, category) {
   try {
     const { data, error } = await supabase
       .from('businesses')
-      .select('category, governorate, source', { count: 'exact' });
+      .select('count', { count: 'exact' })
+      .eq('city', city)
+      .eq('category', category);
 
     if (error) throw error;
-    
-    const stats = {
-      total: data?.length || 0,
-      by_category: {},
-      by_governorate: {},
-      by_source: {}
-    };
-
-    if (data) {
-      data.forEach(business => {
-        stats.by_category[business.category] = (stats.by_category[business.category] || 0) + 1;
-        stats.by_governorate[business.governorate] = (stats.by_governorate[business.governorate] || 0) + 1;
-        stats.by_source[business.source] = (stats.by_source[business.source] || 0) + 1;
-      });
-    }
-
-    return stats;
+    return data?.length || 0;
   } catch (error) {
-    console.error('Get business stats error:', error);
-    return { total: 0, by_category: {}, by_governorate: {}, by_source: {} };
+    logger.error('Get business count error:', error);
+    return 0;
   }
 }
 
 module.exports = {
   findDuplicateBusiness,
   saveBusiness,
-  promoteStagingToBusiness,
   getBusinessesByJob,
-  getBusinessStats
+  getBusinessCountForCityCategory
 };

@@ -1,191 +1,166 @@
-# Qahbaxana AI Agent System
+# StartFresh Iraqi Business Collection System
 
-Production-ready backend AI Governor Agent system for Iraqi business data collection.
+Simplified, reliable backend system for Iraqi business data collection with immediate persistence and crash recovery.
 
 ## 🎯 Features
 
-- **Backend-only**: No frontend dependencies, browser-independent
-- **Multi-source data collection**: Gemini AI, OpenStreetMap, Foursquare
-- **Immediate persistence**: Every validated record saved instantly to staging
-- **Job recovery**: Automatically resumes interrupted jobs on server restart
-- **Queue management**: Safe concurrent job execution with limits
-- **Deduplication**: Smart duplicate detection and prevention
-- **Progress tracking**: Real-time job progress and status monitoring
+- **Backend-first only**: No frontend dependencies, browser-independent
+- **Immediate persistence**: Every valid business saved instantly to database
+- **Crash recovery**: Jobs resume automatically on server restart
+- **Simple architecture**: Reusable agent engine, not 18 different files
+- **Target-based collection**: 10 businesses per city+category
+- **Multi-source data**: OpenStreetMap, Foursquare, Gemini verification
+- **Real-time dashboard**: Simple web interface for progress monitoring
+- **Queue management**: Safe concurrent job execution (max 2)
 
 ## 📁 Project Structure
 
 ```
-qahbaxana/
+startfresh/
 ├── package.json
 ├── .gitignore
 ├── .env.example
 ├── README.md
 ├── server.js
 ├── database-schema.sql
-├── src/
-│   ├── config/
-│   │   ├── constants.js
-│   │   ├── categories.js
-│   │   └── governorates.js
-│   ├── db/
-│   │   ├── supabase.js
-│   │   ├── jobs.js
-│   │   ├── stagingBusinesses.js
-│   │   └── businesses.js
-│   ├── agents/
-│   │   ├── runAgent.js
-│   │   ├── autoContinueGovernorate.js
-│   │   ├── fullIraqCoverage.js
-│   │   └── resumeInterruptedJobs.js
-│   ├── services/
-│   │   ├── aiParser.js
-│   │   ├── validator.js
-│   │   ├── normalizer.js
-│   │   ├── deduplicator.js
-│   │   ├── progressTracker.js
-│   │   └── queueManager.js
-│   ├── sources/
-│   │   ├── geminiSource.js
-│   │   ├── openstreetmapSource.js
-│   │   ├── foursquareSource.js
-│   │   └── mergeSources.js
-│   ├── routes/
-│   │   ├── runAgentRoute.js
-│   │   ├── autoContinueRoute.js
-│   │   ├── fullIraqCoverageRoute.js
-│   │   └── jobStatusRoute.js
-│   └── utils/
-│       ├── logger.js
-│       ├── safeJsonParse.js
-│       └── sleep.js
-└── tests/
-    ├── test-run-agent.js
-    ├── test-auto-continue.js
-    └── test-full-iraq.js
+├── dashboard/
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
+└── src/
+    ├── config/
+    │   ├── constants.js
+    │   ├── categories.js
+    │   ├── governorates.js
+    │   └── cityMap.js
+    ├── db/
+    │   ├── supabase.js
+    │   ├── jobs.js
+    │   ├── businesses.js
+    │   └── progress.js
+    ├── agents/
+    │   ├── governorateRunner.js
+    │   ├── cityRunner.js
+    │   ├── categoryRunner.js
+    │   └── resumeInterruptedJobs.js
+    ├── services/
+    │   ├── validator.js
+    │   ├── normalizer.js
+    │   ├── persistence.js
+    │   ├── targetCounter.js
+    │   └── queueManager.js
+    ├── sources/
+    │   ├── openstreetmapSource.js
+    │   ├── foursquareSource.js
+    │   ├── geminiVerifier.js
+    │   └── mergeSources.js
+    ├── routes/
+    │   ├── startGovernorateRoute.js
+    │   ├── startAllRoute.js
+    │   ├── jobStatusRoute.js
+    │   └── dashboardRoute.js
+    └── utils/
+        ├── logger.js
+        ├── sleep.js
+        └── safeJsonParse.js
 ```
 
-## 🚀 Setup Instructions
+## 🚀 Quick Start
 
-### 1. Environment Configuration
-
-Copy `.env.example` to `.env` and configure:
+### 1. Environment Setup
 
 ```bash
+# Copy environment template
 cp .env.example .env
-```
 
-Edit `.env` with your credentials:
-
-```env
-# Supabase Configuration
-SUPABASE_URL=https://ujdsxzvvgaugypwtugdl.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZHN4enZ2Z2F1Z3lwd3R1Z2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNzQ3NjYsImV4cCI6MjA5MDk1MDc2Nn0.XlWRSUAFTBYq3udqmBSkXI2bA73MlyriC1nWuwP4C7c
-
-# AI Service Configuration
-GEMINI_API_KEY=AIzaSyC9pda88kTF2Gpdj4geMB68OUEHUotcX8U
-
-# Optional External APIs
-FOURSQUARE_API_KEY=your_foursquare_api_key_here
-
-# Server Configuration
+# Edit .env with your credentials
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_ANON_KEY=your_anon_key
+GEMINI_API_KEY=your_gemini_api_key
+FOURSQUARE_API_KEY=your_foursquare_api_key
 PORT=3000
 NODE_ENV=development
 ```
 
 ### 2. Database Setup
 
-1. Go to your Supabase project: https://ujdsxzvvgaugypwtugdl.supabase.co
-2. Navigate to **SQL Editor**
-3. Copy the entire contents of `database-schema.sql`
-4. Click **Run** to execute
+1. Create a new Supabase project
+2. Run the `database-schema.sql` in the Supabase SQL Editor
+3. Enable RLS policies (included in schema)
 
-This creates:
-- `jobs` table - Agent run tracking
-- `staging_businesses` table - Immediate persistence
-- `businesses` table - Final approved data
-- All indexes and RLS policies
-
-### 3. Install Dependencies
+### 3. Install and Run
 
 ```bash
+# Install dependencies
 npm install
-```
 
-### 4. Start Server
-
-```bash
+# Start the server
 npm start
-# or for development:
+
+# Or for development
 npm run dev
 ```
 
-The server will:
-- Connect to Supabase
-- Resume any interrupted jobs
-- Start accepting API requests
+Visit `http://localhost:3000` to see the dashboard.
 
-## 📊 How Job Recovery Works
+## 📊 API Endpoints
 
-1. **Server Startup**: Checks for jobs with status `pending` or `running`
-2. **Automatic Resume**: Re-runs interrupted jobs from their parameters
-3. **No Data Loss**: All validated records are saved immediately to staging
-4. **Progress Tracking**: Jobs resume from where they left off
+### Start Collection
+- `POST /api/start-governorate` - Start collection for one governorate
+- `POST /api/start-all` - Start collection for all 18 governorates
 
-## 🧪 Testing
+### Monitor Progress
+- `GET /api/job/:id` - Get detailed job status
+- `GET /api/dashboard` - Get dashboard overview
+- `GET /api/dashboard/summary` - Get summary by location
 
-### Test Single Agent
+### System
+- `GET /health` - Health check and queue status
+- `GET /` - Dashboard interface
 
-```bash
-npm run test:run-agent Baghdad restaurants
-```
+## 🏛️ Governorates Covered
 
-### Test Auto-Continue (One Governorate)
+18 Iraqi governorates with multiple cities each:
+- Baghdad, Basra, Najaf, Karbala, Erbil, Duhok, Sulaymaniyah
+- Mosul, Kirkuk, Dhi Qar, Maysan, Muthanna, Al Anbar
+- Babil, Diyala, Wasit, Saladin, Al-Qadisiyyah
 
-```bash
-npm run test:auto-continue Baghdad
-```
+## 📈 Categories (20)
 
-### Test Full Iraq Coverage
+Restaurants, Hotels, Pharmacies, Supermarkets, Gas stations, Hospitals, Schools, Banks, Clothing stores, Electronics stores, Car repair, Beauty salons, Cafes, Bakeries, Bookstores, Hardware stores, Jewelry stores, Mobile phone stores, Furniture stores, Fitness centers
 
-```bash
-npm run test:full-iraq
-```
+## 🔄 Collection Logic
 
-⚠️ **Warning**: Full Iraq coverage runs 270 jobs and takes several hours!
+For each governorate → city → category:
+1. Fetch from OpenStreetMap + Foursquare
+2. Validate businesses (name, category, city required)
+3. Normalize and deduplicate
+4. Save immediately to database
+5. Stop when 10 valid businesses saved
+6. Move to next category
 
-## 📡 API Endpoints
+## 💾 Persistence & Recovery
 
-### POST /api/run-agent
-Run single agent for governorate + category
+- **Immediate saving**: Every valid business saved instantly
+- **Job tracking**: Progress stored in database
+- **Crash recovery**: Jobs resume on server restart
+- **No browser dependency**: Work continues even if frontend crashes
 
-**Request:**
-```json
-{
-  "governorate": "Baghdad",
-  "category": "restaurants"
-}
-```
+## �️ Data Quality
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Agent started for restaurants in Baghdad",
-  "status": "running"
-}
-```
+- **Strict validation**: Name, category, city must be ≥2 characters
+- **Deduplication**: Based on normalized_name + "|" + city + "|" + phone
+- **Source verification**: Gemini AI used for verification, not primary source
+- **Real data only**: Prioritizes actual business data over AI hallucinations
 
-### POST /api/auto-continue
-Run all categories for one governorate
+## 📱 Dashboard Features
 
-**Request:**
-```json
-{
-  "governorate": "Baghdad"
-}
-```
-
+- Real-time job progress
+- Governorate and city status
+- Category completion tracking
+- Recent logs and errors
+- Start/stop controls
 ### POST /api/full-iraq-coverage
 Run all governorates and categories
 

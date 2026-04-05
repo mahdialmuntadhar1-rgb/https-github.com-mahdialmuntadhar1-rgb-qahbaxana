@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StartFresh - Iraqi Business Collection Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏛️ StartFresh Iraqi Business Collection</h1>
+            <p>Real-time dashboard for Iraqi business data collection</p>
+        </header>
+
+        <section class="stats">
+            <div class="stat-card">
+                <h3>Running Jobs</h3>
+                <div class="stat-value" id="runningJobs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Jobs</h3>
+                <div class="stat-value" id="pendingJobs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Businesses</h3>
+                <div class="stat-value" id="totalBusinesses">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Locations</h3>
+                <div class="stat-value" id="activeLocations">0</div>
+            </div>
+        </section>
+
+        <section class="controls">
+            <button id="startGovernorateBtn" class="btn btn-primary">
+                🏛️ Start Governorate
+            </button>
+            <button id="startAllBtn" class="btn btn-secondary">
+                🇮🇶 Start All Governorates
+            </button>
+            <button id="refreshBtn" class="btn btn-outline">
+                🔄 Refresh
+            </button>
+        </section>
+
+        <section class="jobs">
+            <h2>Active Jobs</h2>
+            <div id="jobsList" class="jobs-list">
+                <p>Loading jobs...</p>
+            </div>
+        </section>
+
+        <section class="locations">
+            <h2>Collection Progress by Location</h2>
+            <div id="locationsList" class="locations-list">
+                <p>Loading locations...</p>
+            </div>
+        </section>
+
+        <section class="logs">
+            <h2>Recent Logs</h2>
+            <div id="logsList" class="logs-list">
+                <p>Loading logs...</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Governorate Selection Modal -->
+    <div id="governorateModal" class="modal">
+        <div class="modal-content">
+            <h3>Select Governorate</h3>
+            <select id="governorateSelect">
+                <option value="">Choose a governorate...</option>
+            </select>
+            <div class="modal-actions">
+                <button id="confirmStartGovernorate" class="btn btn-primary">Start</button>
+                <button id="cancelStartGovernorate" class="btn btn-outline">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

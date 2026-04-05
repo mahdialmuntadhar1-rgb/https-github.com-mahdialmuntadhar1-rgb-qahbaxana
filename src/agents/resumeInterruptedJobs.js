@@ -1,5 +1,5 @@
 const { getRunningJobs } = require('../db/jobs');
-const { runAgent } = require('./runAgent');
+const { runCategoryCollection } = require('./categoryRunner');
 const logger = require('../utils/logger');
 
 async function resumeInterruptedJobs() {
@@ -23,15 +23,16 @@ async function resumeInterruptedJobs() {
     
     for (const job of runningJobs) {
       try {
-        logger.info(`🔄 Resuming job: ${job.governorate} - ${job.category} (ID: ${job.id})`);
+        logger.info(`🔄 Resuming job: ${job.governorate} - ${job.city} - ${job.category} (ID: ${job.id})`);
         
-        // Re-run the agent with the same parameters
-        await runAgent(job.governorate, job.category);
+        // Re-run the category collection with the same parameters
+        await runCategoryCollection(job.governorate, job.city, job.category);
         
         results.resumed++;
         results.details.push({
           jobId: job.id,
           governorate: job.governorate,
+          city: job.city,
           category: job.category,
           status: 'resumed'
         });
@@ -44,6 +45,7 @@ async function resumeInterruptedJobs() {
         results.details.push({
           jobId: job.id,
           governorate: job.governorate,
+          city: job.city,
           category: job.category,
           status: 'failed',
           error: error.message
