@@ -38,7 +38,20 @@ async function getProgressLogs(jobId) {
   }
 }
 
+// Get recent logs
+async function getRecentLogs(limit = 50) {
+    const { data, error } = await supabase
+        .from('progress_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    
+    if (error) throw error;
+    return data || [];
+}
+
 module.exports = {
-  logProgress,
-  getProgressLogs
+    logProgress,
+    getProgressLogs,
+    getRecentLogs
 };

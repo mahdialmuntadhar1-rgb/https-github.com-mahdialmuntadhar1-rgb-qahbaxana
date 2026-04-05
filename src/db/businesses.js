@@ -89,9 +89,20 @@ async function getBusinessCountForCityCategory(city, category) {
   }
 }
 
+async function getRecentBusinesses(limit = 20) {
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  
+  if (error) throw error;
+  return data || [];
+}
+
 module.exports = {
-  findDuplicateBusiness,
   saveBusiness,
   getBusinessesByJob,
-  getBusinessCountForCityCategory
+  getBusinessCountForCityCategory,
+  getRecentBusinesses
 };

@@ -190,6 +190,65 @@ async function failJob(jobId, errorMessage) {
   }
 }
 
+async function getFailedJobs() {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('status', 'failed')
+      .order('updated_at', { ascending: false })
+      .limit(50);
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error('Get failed jobs error:', error);
+    return [];
+  }
+}
+
+async function retryFailedJobs() {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ 
+        status: 'pending', 
+        retry_count: supabase.raw('retry_count + 1'),
+        error_message: null 
+      })
+      .eq('status', 'failed')
+      .lt('retry_count', 3);
+    
+    if (error) throw error;
+    return data?.length || 0;
+  } catch (error) {
+    logger.error('Retry failed jobs error:', error);
+    return 0;
+  }
+}
+
+async function retryJob(jobId) {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ 
+        status: 'pending', 
+        retry_count: supabase.raw('retry_count + 1'),
+        error_message: null 
+      })
+      .eq('id', jobId)
+      .eq('status', 'failed')
+      .lt('retry_count', 3)
+      .single();
+    
+    if (error) throw error;
+    return !!data;
+  } catch (error) {
+    logger.error('Retry job error:', error);
+    return false;
+  }
+}
+
 module.exports = {
   createJob,
   updateJobStatus,
@@ -199,5 +258,8 @@ module.exports = {
   getPendingJobs,
   incrementRetryCount,
   completeJob,
-  failJob
+  failJob,
+  getFailedJobs,
+  retryFailedJobs,
+  retryJob
 };

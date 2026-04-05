@@ -10,8 +10,13 @@ const logger = require('./src/utils/logger');
 // Import routes
 const startGovernorateRoute = require('./src/routes/startGovernorateRoute');
 const startAllRoute = require('./src/routes/startAllRoute');
+const startSelectedRoute = require('./src/routes/startSelectedRoute');
 const jobStatusRoute = require('./src/routes/jobStatusRoute');
 const dashboardRoute = require('./src/routes/dashboardRoute');
+const failuresRoute = require('./src/routes/failuresRoute');
+const resultsRoute = require('./src/routes/resultsRoute');
+const activityRoute = require('./src/routes/activityRoute');
+const retryRoute = require('./src/routes/retryRoute');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,8 +31,13 @@ app.use(express.static(path.join(__dirname, 'dashboard')));
 // Register API routes
 app.use('/api', startGovernorateRoute);
 app.use('/api', startAllRoute);
+app.use('/api', startSelectedRoute);
 app.use('/api', jobStatusRoute);
 app.use('/api', dashboardRoute);
+app.use('/api', failuresRoute);
+app.use('/api', resultsRoute);
+app.use('/api', activityRoute);
+app.use('/api', retryRoute);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -52,9 +62,15 @@ app.get('/api', (req, res) => {
     endpoints: {
       'POST /api/start-governorate': 'Start collection for one governorate',
       'POST /api/start-all': 'Start collection for all governorates',
+      'POST /api/start-selected': 'Start collection for selected governorates and categories',
       'GET /api/job/:id': 'Get job status and progress',
       'GET /api/dashboard': 'Get dashboard overview',
       'GET /api/dashboard/summary': 'Get summary by location',
+      'GET /api/failures': 'Get failed jobs',
+      'GET /api/results': 'Get recent businesses',
+      'GET /api/activity': 'Get activity log',
+      'POST /api/retry-failed': 'Retry all failed jobs',
+      'POST /api/retry-job/:id': 'Retry specific job',
       'GET /health': 'Health check and queue status'
     }
   });
