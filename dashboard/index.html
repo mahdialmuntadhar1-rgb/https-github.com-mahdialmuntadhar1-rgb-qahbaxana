@@ -10,74 +10,149 @@
     <div class="container">
         <header>
             <h1>🏛️ StartFresh Iraqi Business Collection</h1>
-            <p>Real-time dashboard for Iraqi business data collection</p>
+            <p>Control and monitor Iraqi business data collection</p>
         </header>
 
-        <section class="stats">
-            <div class="stat-card">
+        <!-- 1. Top Summary Bar -->
+        <section class="summary-bar">
+            <div class="summary-card">
                 <h3>Running Jobs</h3>
-                <div class="stat-value" id="runningJobs">0</div>
+                <div class="summary-value" id="runningJobs">0</div>
             </div>
-            <div class="stat-card">
+            <div class="summary-card">
                 <h3>Pending Jobs</h3>
-                <div class="stat-value" id="pendingJobs">0</div>
+                <div class="summary-value" id="pendingJobs">0</div>
             </div>
-            <div class="stat-card">
+            <div class="summary-card">
+                <h3>Completed Jobs</h3>
+                <div class="summary-value" id="completedJobs">0</div>
+            </div>
+            <div class="summary-card">
+                <h3>Failed Jobs</h3>
+                <div class="summary-value" id="failedJobs">0</div>
+            </div>
+            <div class="summary-card">
                 <h3>Total Businesses</h3>
-                <div class="stat-value" id="totalBusinesses">0</div>
+                <div class="summary-value" id="totalBusinesses">0</div>
             </div>
-            <div class="stat-card">
-                <h3>Active Locations</h3>
-                <div class="stat-value" id="activeLocations">0</div>
-            </div>
-        </section>
-
-        <section class="controls">
-            <button id="startGovernorateBtn" class="btn btn-primary">
-                🏛️ Start Governorate
-            </button>
-            <button id="startAllBtn" class="btn btn-secondary">
-                🇮🇶 Start All Governorates
-            </button>
-            <button id="refreshBtn" class="btn btn-outline">
-                🔄 Refresh
-            </button>
-        </section>
-
-        <section class="jobs">
-            <h2>Active Jobs</h2>
-            <div id="jobsList" class="jobs-list">
-                <p>Loading jobs...</p>
+            <div class="summary-card">
+                <h3>Active Governorates</h3>
+                <div class="summary-value" id="activeGovernorates">0</div>
             </div>
         </section>
 
-        <section class="locations">
-            <h2>Collection Progress by Location</h2>
-            <div id="locationsList" class="locations-list">
-                <p>Loading locations...</p>
+        <!-- 2. Governorate Selection Panel -->
+        <section class="selection-panel">
+            <div class="panel-header">
+                <h2>📍 Governorates</h2>
+                <div class="selection-controls">
+                    <span class="selection-count" id="governorateCount">0 selected</span>
+                    <button class="btn btn-small" id="selectAllGovernorates">Select All</button>
+                    <button class="btn btn-small" id="deselectAllGovernorates">Deselect All</button>
+                </div>
+            </div>
+            <div class="grid-container" id="governorateGrid">
+                <!-- Governorates will be populated by JavaScript -->
             </div>
         </section>
 
-        <section class="logs">
-            <h2>Recent Logs</h2>
-            <div id="logsList" class="logs-list">
-                <p>Loading logs...</p>
+        <!-- 3. Category Selection Panel -->
+        <section class="selection-panel">
+            <div class="panel-header">
+                <h2>� Categories</h2>
+                <div class="selection-controls">
+                    <span class="selection-count" id="categoryCount">0 selected</span>
+                    <button class="btn btn-small" id="selectAllCategories">Select All</button>
+                    <button class="btn btn-small" id="deselectAllCategories">Deselect All</button>
+                </div>
+            </div>
+            <div class="grid-container" id="categoryGrid">
+                <!-- Categories will be populated by JavaScript -->
             </div>
         </section>
-    </div>
 
-    <!-- Governorate Selection Modal -->
-    <div id="governorateModal" class="modal">
-        <div class="modal-content">
-            <h3>Select Governorate</h3>
-            <select id="governorateSelect">
-                <option value="">Choose a governorate...</option>
-            </select>
-            <div class="modal-actions">
-                <button id="confirmStartGovernorate" class="btn btn-primary">Start</button>
-                <button id="cancelStartGovernorate" class="btn btn-outline">Cancel</button>
+        <!-- 4. Control Actions -->
+        <section class="control-panel">
+            <div class="control-buttons">
+                <button class="btn btn-primary" id="startSelected">▶️ Start Selected</button>
+                <button class="btn btn-secondary" id="startAll">🇮🇶 Start All Governorates</button>
+                <button class="btn btn-outline" id="refresh">🔄 Refresh</button>
+                <button class="btn btn-warning" id="retryFailed">🔁 Retry Failed Jobs</button>
             </div>
-        </div>
+            <div class="validation-message" id="validationMessage"></div>
+        </section>
+
+        <!-- 5. Active Progress Table -->
+        <section class="data-panel">
+            <h2>📊 Active Progress</h2>
+            <div class="table-container">
+                <table class="progress-table" id="progressTable">
+                    <thead>
+                        <tr>
+                            <th>Governorate</th>
+                            <th>City</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Saved</th>
+                            <th>Target</th>
+                            <th>Progress</th>
+                            <th>Step</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="progressTableBody">
+                        <tr><td colspan="9" class="loading">Loading progress data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 6. Recent Businesses Table -->
+        <section class="data-panel">
+            <h2>🏪 Recent Businesses</h2>
+            <div class="table-container">
+                <table class="business-table" id="businessTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Governorate</th>
+                            <th>City</th>
+                            <th>Category</th>
+                            <th>Phone</th>
+                            <th>Source</th>
+                            <th>Confidence</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="businessTableBody">
+                        <tr><td colspan="8" class="loading">Loading business data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 7. Failed Jobs Panel -->
+        <section class="data-panel">
+            <h2>❌ Failed Jobs</h2>
+            <div class="table-container">
+                <table class="failed-table" id="failedTable">
+                    <thead>
+                        <tr>
+                            <th>Governorate</th>
+                            <th>City</th>
+                            <th>Category</th>
+                            <th>Error</th>
+                            <th>Retries</th>
+                            <th>Updated</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="failedTableBody">
+                        <tr><td colspan="7" class="loading">Loading failed jobs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
     <script src="app.js"></script>

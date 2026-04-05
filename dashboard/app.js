@@ -2,174 +2,206 @@ class Dashboard {
     constructor() {
         this.apiBase = '/api';
         this.refreshInterval = 5000; // 5 seconds
+        this.selectedGovernorates = new Set();
+        this.selectedCategories = new Set();
+        
+        // Data
+        this.governorates = [
+            'Baghdad', 'Basra', 'Nineveh', 'Erbil', 'Najaf', 'Karbala', 
+            'Sulaymaniyah', 'Kirkuk', 'Anbar', 'Diyala', 'Babil', 'Dhi Qar', 
+            'Duhok', 'Maysan', 'Muthanna', 'Qadisiyyah', 'Salah al-Din', 'Wasit'
+        ];
+        
+        this.categories = [
+            'Restaurants', 'Cafes', 'Pharmacies', 'Hospitals', 'Clinics', 
+            'Hotels', 'Supermarkets', 'Bakeries', 'Electronics', 'Clothing', 
+            'Schools', 'Universities', 'Gyms', 'Salons', 'Car Services', 
+            'Construction', 'Hardware', 'Jewelry', 'Mobile Phones', 'Furniture'
+        ];
+        
         this.init();
     }
 
     init() {
+        this.renderGovernorates();
+        this.renderCategories();
         this.bindEvents();
         this.loadDashboard();
         this.startAutoRefresh();
     }
 
+    renderGovernorates() {
+        const grid = document.getElementById('governorateGrid');
+        grid.innerHTML = this.governorates.map(gov => `
+            <div class="grid-item" data-governorate="${gov}">
+                <input type="checkbox" id="gov-${gov}" class="checkbox-input">
+                <label for="gov-${gov}" class="grid-label">
+                    ${gov}
+                </label>
+            </div>
+        `).join('');
+    }
+
+    renderCategories() {
+        const grid = document.getElementById('categoryGrid');
+        grid.innerHTML = this.categories.map(category => `
+            <div class="grid-item" data-category="${category}">
+                <input type="checkbox" id="cat-${category}" class="checkbox-input">
+                <label for="cat-${category}" class="grid-label">
+                    ${category}
+                </label>
+            </div>
+        `).join('');
+    }
+
     bindEvents() {
-        document.getElementById('startGovernorateBtn').addEventListener('click', () => this.showGovernorateModal());
-        document.getElementById('startAllBtn').addEventListener('click', () => this.startAllGovernorates());
-        document.getElementById('refreshBtn').addEventListener('click', () => this.loadDashboard());
+        // Governorate selection
+        document.getElementById('selectAllGovernorates').addEventListener('click', () => {
+            this.selectAllGovernorates();
+        });
         
-        document.getElementById('confirmStartGovernorate').addEventListener('click', () => this.startGovernorate());
-        document.getElementById('cancelStartGovernorate').addEventListener('click', () => this.hideGovernorateModal());
-    }
-
-    async loadDashboard() {
-        try {
-            const [dashboardData, summaryData] = await Promise.all([
-                this.fetch('/dashboard'),
-                this.fetch('/dashboard/summary')
-            ]);
-
-            this.updateStats(dashboardData.stats);
-            this.updateJobs(dashboardData.jobs);
-            this.updateLocations(summaryData.locations);
-            this.populateGovernorateSelect(dashboardData.availableGovernorates);
-        } catch (error) {
-            this.showError('Failed to load dashboard data');
-            console.error('Dashboard load error:', error);
-        }
-    }
-
-    async fetch(endpoint) {
-        const response = await fetch(this.apiBase + endpoint);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-    }
-
-    updateStats(stats) {
-        document.getElementById('runningJobs').textContent = stats.runningJobs || 0;
-        document.getElementById('pendingJobs').textContent = stats.pendingJobs || 0;
-        document.getElementById('totalBusinesses').textContent = stats.totalBusinesses || 0;
-        document.getElementById('activeLocations').textContent = stats.totalLocations || 0;
-    }
-
-    updateJobs(jobs) {
-        const jobsList = document.getElementById('jobsList');
+        document.getElementById('deselectAllGovernorates').addEventListener('click', () => {
+            this.deselectAllGovernorates();
+        });
         
-        if (jobs.length === 0) {
-            jobsList.innerHTML = '<p>No active jobs</p>';
-            return;
-        }
-
-        jobsList.innerHTML = jobs.map(job => `
-            <div class="job-item">
-                <div class="job-header">
-                    <div class="job-title">${job.governorate} - ${job.city} - ${job.category}</div>
-                    <div class="job-status status-${job.status}">${job.status}</div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${job.progress || 0}%"></div>
-                </div>
-                <div class="job-details">
-                    <div class="job-detail">Target: ${job.target_count}</div>
-                    <div class="job-detail">Saved: ${job.saved_count}</div>
-                    <div class="job-detail">Progress: ${Math.round((job.saved_count / job.target_count) * 100)}%</div>
-                    <div class="job-detail">Step: ${job.current_step || 'Unknown'}</div>
-                </div>
-                ${job.recentLogs && job.recentLogs.length > 0 ? `
-                    <div class="job-logs">
-                        <strong>Recent Logs:</strong>
-                        ${job.recentLogs.map(log => `
-                            <div class="log-item">
-                                <span class="log-time">${new Date(log.created_at).toLocaleTimeString()}</span>
-                                ${log.message}
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-    }
-
-    updateLocations(locations) {
-        const locationsList = document.getElementById('locationsList');
+        // Category selection
+        document.getElementById('selectAllCategories').addEventListener('click', () => {
+            this.selectAllCategories();
+        });
         
-        if (locations.length === 0) {
-            locationsList.innerHTML = '<p>No active locations</p>';
-            return;
-        }
-
-        locationsList.innerHTML = locations.map(location => `
-            <div class="location-item">
-                <div class="location-header">
-                    <div class="location-title">${location.governorate} - ${location.city}</div>
-                    <div class="location-progress">${location.totalSaved}/${location.totalTarget} businesses</div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(location.totalSaved / location.totalTarget) * 100}%"></div>
-                </div>
-                <div class="categories-grid">
-                    ${Object.entries(location.categories).map(([category, catData]) => `
-                        <div class="category-item">
-                            <div class="category-name">${category}</div>
-                            <div class="category-status status-${catData.status}">
-                                ${catData.saved}/${catData.target}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `).join('');
+        document.getElementById('deselectAllCategories').addEventListener('click', () => {
+            this.deselectAllCategories();
+        });
+        
+        // Control actions
+        document.getElementById('startSelected').addEventListener('click', () => {
+            this.startSelected();
+        });
+        
+        document.getElementById('startAll').addEventListener('click', () => {
+            this.startAll();
+        });
+        
+        document.getElementById('refresh').addEventListener('click', () => {
+            this.loadDashboard();
+        });
+        
+        document.getElementById('retryFailed').addEventListener('click', () => {
+            this.retryFailed();
+        });
+        
+        // Checkbox change events
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('checkbox-input')) {
+                const gridItem = e.target.closest('.grid-item');
+                if (gridItem.dataset.governorate) {
+                    this.updateGovernorateSelection();
+                } else if (gridItem.dataset.category) {
+                    this.updateCategorySelection();
+                }
+            }
+        });
     }
 
-    populateGovernorateSelect(governorates) {
-        const select = document.getElementById('governorateSelect');
-        select.innerHTML = '<option value="">Choose a governorate...</option>' +
-            governorates.map(gov => `<option value="${gov}">${gov}</option>`).join('');
+    selectAllGovernorates() {
+        this.governorates.forEach(gov => {
+            const checkbox = document.getElementById(`gov-${gov}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        this.updateGovernorateSelection();
     }
 
-    showGovernorateModal() {
-        document.getElementById('governorateModal').style.display = 'flex';
+    deselectAllGovernorates() {
+        this.governorates.forEach(gov => {
+            const checkbox = document.getElementById(`gov-${gov}`);
+            if (checkbox) checkbox.checked = false;
+        });
+        this.updateGovernorateSelection();
     }
 
-    hideGovernorateModal() {
-        document.getElementById('governorateModal').style.display = 'none';
+    selectAllCategories() {
+        this.categories.forEach(category => {
+            const checkbox = document.getElementById(`cat-${category}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        this.updateCategorySelection();
     }
 
-    async startGovernorate() {
-        const select = document.getElementById('governorateSelect');
-        const governorate = select.value;
+    deselectAllCategories() {
+        this.categories.forEach(category => {
+            const checkbox = document.getElementById(`cat-${category}`);
+            if (checkbox) checkbox.checked = false;
+        });
+        this.updateCategorySelection();
+    }
 
-        if (!governorate) {
-            this.showError('Please select a governorate');
+    updateGovernorateSelection() {
+        this.selectedGovernorates.clear();
+        this.governorates.forEach(gov => {
+            const checkbox = document.getElementById(`gov-${gov}`);
+            if (checkbox && checkbox.checked) {
+                this.selectedGovernorates.add(gov);
+                document.querySelector(`[data-governorate="${gov}"]`).classList.add('selected');
+            } else {
+                document.querySelector(`[data-governorate="${gov}"]`).classList.remove('selected');
+            }
+        });
+        document.getElementById('governorateCount').textContent = `${this.selectedGovernorates.size} selected`;
+    }
+
+    updateCategorySelection() {
+        this.selectedCategories.clear();
+        this.categories.forEach(category => {
+            const checkbox = document.getElementById(`cat-${category}`);
+            if (checkbox && checkbox.checked) {
+                this.selectedCategories.add(category);
+                document.querySelector(`[data-category="${category}"]`).classList.add('selected');
+            } else {
+                document.querySelector(`[data-category="${category}"]`).classList.remove('selected');
+            }
+        });
+        document.getElementById('categoryCount').textContent = `${this.selectedCategories.size} selected`;
+    }
+
+    async startSelected() {
+        if (this.selectedGovernorates.size === 0 || this.selectedCategories.size === 0) {
+            this.showValidation('Please select at least one governorate and one category');
             return;
         }
 
         try {
-            const response = await fetch(this.apiBase + '/start-governorate', {
+            const response = await fetch(this.apiBase + '/start-selected', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ governorate })
+                body: JSON.stringify({
+                    governorates: Array.from(this.selectedGovernorates),
+                    categories: Array.from(this.selectedCategories)
+                })
             });
 
             const result = await response.json();
 
             if (result.success) {
-                this.showSuccess(`Started collection for ${governorate}`);
-                this.hideGovernorateModal();
+                this.showSuccess(`Started collection for ${this.selectedGovernorates.size} governorates and ${this.selectedCategories.size} categories`);
                 this.loadDashboard();
             } else {
-                this.showError(result.error || 'Failed to start governorate');
+                this.showError(result.error || 'Failed to start selected collection');
             }
         } catch (error) {
-            this.showError('Failed to start governorate');
-            console.error('Start governorate error:', error);
+            if (error.message.includes('404')) {
+                // Fallback for missing endpoint
+                this.showError('Start Selected endpoint not available yet. Please use Start All or individual governorate selection.');
+            } else {
+                this.showError('Failed to start selected collection');
+            }
+            console.error('Start selected error:', error);
         }
     }
 
-    async startAllGovernorates() {
-        if (!confirm('This will start collection for all 18 governorates. This will take several hours. Continue?')) {
+    async startAll() {
+        if (!confirm('This will start collection for all 18 governorates and 20 categories. This will take several hours. Continue?')) {
             return;
         }
 
@@ -195,32 +227,217 @@ class Dashboard {
         }
     }
 
+    async retryFailed() {
+        try {
+            const response = await fetch(this.apiBase + '/retry-failed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showSuccess(`Retried ${result.retried || 0} failed jobs`);
+                this.loadDashboard();
+            } else {
+                this.showError(result.error || 'Failed to retry jobs');
+            }
+        } catch (error) {
+            if (error.message.includes('404')) {
+                this.showError('Retry endpoint not available yet');
+            } else {
+                this.showError('Failed to retry jobs');
+            }
+            console.error('Retry failed error:', error);
+        }
+    }
+
+    async loadDashboard() {
+        try {
+            const [dashboardData, failuresData, resultsData] = await Promise.all([
+                this.fetch('/dashboard'),
+                this.fetch('/failures').catch(() => ({ jobs: [] })),
+                this.fetch('/results').catch(() => ({ businesses: [] }))
+            ]);
+
+            this.updateSummary(dashboardData.stats);
+            this.updateProgressTable(dashboardData.jobs);
+            this.updateBusinessTable(resultsData.businesses);
+            this.updateFailedTable(failuresData.jobs);
+        } catch (error) {
+            this.showError('Failed to load dashboard data');
+            console.error('Dashboard load error:', error);
+        }
+    }
+
+    async fetch(endpoint) {
+        const response = await fetch(this.apiBase + endpoint);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    }
+
+    updateSummary(stats) {
+        document.getElementById('runningJobs').textContent = stats.runningJobs || 0;
+        document.getElementById('pendingJobs').textContent = stats.pendingJobs || 0;
+        document.getElementById('completedJobs').textContent = stats.completedJobs || 0;
+        document.getElementById('failedJobs').textContent = stats.failedJobs || 0;
+        document.getElementById('totalBusinesses').textContent = stats.totalBusinesses || 0;
+        document.getElementById('activeGovernorates').textContent = stats.activeGovernorates || 0;
+    }
+
+    updateProgressTable(jobs) {
+        const tbody = document.getElementById('progressTableBody');
+        
+        if (!jobs || jobs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No active jobs</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = jobs.map(job => `
+            <tr class="job-row status-${job.status}">
+                <td>${job.governorate}</td>
+                <td>${job.city}</td>
+                <td>${job.category}</td>
+                <td><span class="status-badge status-${job.status}">${job.status}</span></td>
+                <td>${job.saved_count || 0}</td>
+                <td>${job.target_count || 10}</td>
+                <td>
+                    <div class="progress-bar-small">
+                        <div class="progress-fill" style="width: ${this.calculateProgress(job)}%"></div>
+                    </div>
+                    <span class="progress-text">${this.calculateProgress(job)}%</span>
+                </td>
+                <td class="step-text">${job.current_step || 'Unknown'}</td>
+                <td class="time-text">${this.formatTime(job.updated_at)}</td>
+            </tr>
+        `).join('');
+    }
+
+    updateBusinessTable(businesses) {
+        const tbody = document.getElementById('businessTableBody');
+        
+        if (!businesses || businesses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No businesses found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = businesses.slice(0, 20).map(business => `
+            <tr>
+                <td class="business-name">${business.name}</td>
+                <td>${business.governorate}</td>
+                <td>${business.city}</td>
+                <td>${business.category}</td>
+                <td>${business.phone || 'N/A'}</td>
+                <td><span class="source-badge">${business.source}</span></td>
+                <td>${this.formatConfidence(business.confidence)}</td>
+                <td class="time-text">${this.formatTime(business.created_at)}</td>
+            </tr>
+        `).join('');
+    }
+
+    updateFailedTable(jobs) {
+        const tbody = document.getElementById('failedTableBody');
+        
+        if (!jobs || jobs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No failed jobs</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = jobs.map(job => `
+            <tr class="failed-row">
+                <td>${job.governorate}</td>
+                <td>${job.city}</td>
+                <td>${job.category}</td>
+                <td class="error-text">${job.error_message || 'Unknown error'}</td>
+                <td>${job.retry_count || 0}</td>
+                <td class="time-text">${this.formatTime(job.updated_at)}</td>
+                <td>
+                    <button class="btn btn-small btn-outline retry-btn" data-job-id="${job.id}">
+                        🔁 Retry
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Bind retry button events
+        tbody.querySelectorAll('.retry-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.retryJob(e.target.dataset.jobId);
+            });
+        });
+    }
+
+    async retryJob(jobId) {
+        try {
+            const response = await fetch(this.apiBase + `/retry-job/${jobId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showSuccess('Job retry initiated');
+                this.loadDashboard();
+            } else {
+                this.showError(result.error || 'Failed to retry job');
+            }
+        } catch (error) {
+            this.showError('Failed to retry job');
+            console.error('Retry job error:', error);
+        }
+    }
+
+    calculateProgress(job) {
+        const saved = job.saved_count || 0;
+        const target = job.target_count || 10;
+        return Math.min(100, Math.round((saved / target) * 100));
+    }
+
+    formatConfidence(confidence) {
+        if (!confidence) return 'N/A';
+        return `${Math.round(confidence * 100)}%`;
+    }
+
+    formatTime(timestamp) {
+        if (!timestamp) return 'N/A';
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    }
+
+    showValidation(message) {
+        const element = document.getElementById('validationMessage');
+        element.textContent = message;
+        element.className = 'validation-message validation-warning';
+        setTimeout(() => {
+            element.textContent = '';
+            element.className = 'validation-message';
+        }, 5000);
+    }
+
     showError(message) {
-        this.showMessage(message, 'error');
+        const element = document.getElementById('validationMessage');
+        element.textContent = message;
+        element.className = 'validation-message validation-error';
+        setTimeout(() => {
+            element.textContent = '';
+            element.className = 'validation-message';
+        }, 5000);
     }
 
     showSuccess(message) {
-        this.showMessage(message, 'success');
-    }
-
-    showMessage(message, type) {
-        // Remove existing messages
-        const existing = document.querySelector('.error, .success');
-        if (existing) {
-            existing.remove();
-        }
-
-        const messageDiv = document.createElement('div');
-        messageDiv.className = type;
-        messageDiv.textContent = message;
-        
-        document.querySelector('.container').insertBefore(messageDiv, document.querySelector('.stats'));
-
-        // Auto-remove after 5 seconds
+        const element = document.getElementById('validationMessage');
+        element.textContent = message;
+        element.className = 'validation-message validation-success';
         setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.remove();
-            }
+            element.textContent = '';
+            element.className = 'validation-message';
         }, 5000);
     }
 
