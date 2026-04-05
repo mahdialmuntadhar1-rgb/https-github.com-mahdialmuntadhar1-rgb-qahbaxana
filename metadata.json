@@ -1,0 +1,5 @@
+{
+  "name": "Iraqi Governor AI Agent",
+  "description": "A dashboard for running AI agents to find local services across Iraqi governorates.",
+  "requestFramePermissions": []
+}
